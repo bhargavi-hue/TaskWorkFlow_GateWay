@@ -1,31 +1,23 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-load_dotenv()
+# ❗ DO NOT use fallback in production
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# We default to postgresql with psycopg2-binary
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Bhargavi@localhost:5432/taskworkflow")
+if not DATABASE_URL:
+    raise Exception("❌ DATABASE_URL is not set. Configure it in Render environment variables.")
 
-try:
-    # Attempt connecting to PostgreSQL
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    # Check connection
-    with engine.connect() as conn:
-        pass
-    print("SQLAlchemy: Successfully connected to PostgreSQL database.")
-except Exception as e:
-    # If connection fails or driver is missing, fallback to local SQLite database for ease of testing
-    sqlite_path = "sqlite:///./taskworkflow.db"
-    print(f"SQLAlchemy: Connection to PostgreSQL failed: {e}. Falling back to SQLite: {sqlite_path}")
-    engine = create_engine(sqlite_path, connect_args={"check_same_thread": False})
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# ✅ Create engine
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
+# ✅ Session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# ✅ Base
 Base = declarative_base()
 
+# ✅ Dependency
 def get_db():
     db = SessionLocal()
     try:
